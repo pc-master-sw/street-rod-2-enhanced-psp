@@ -1,0 +1,11 @@
+Street Rod 2 Enhanced GE para PSP
+
+Motor de origen: https://github.com/kylofon/streetrod2-enhanced.git
+Revisión: 0f81dcc189e9737c522a1ee91f51c0e3d9e1de31
+
+Las fuentes del motor incluyen los cambios de portabilidad para PSP.
+Con PSPSDK en PATH, ejecutá desde el directorio source:
+
+  make -C build -f ../runtime/psp/psp.mk NATIVE_ROOT="$PWD" STREET_ROD_ENGINE=1 STREET_ROD_EDITION=2g
+
+El EBOOT.PBP se genera en source/build.

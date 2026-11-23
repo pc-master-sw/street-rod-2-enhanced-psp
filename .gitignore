@@ -1,0 +1,11 @@
+*.o
+*.d
+*.a
+*.elf
+*.prx
+*.PBP
+*.pbp
+*.zip
+/Game/
+/Save/
+PERF*.TXT
