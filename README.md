@@ -24,7 +24,7 @@ El ejecutable queda en `source/build/EBOOT.PBP`. Las fuentes preparadas para PSP
 
 ## Estado de GE R8
 
-R8 reabre los archivos de datos de solo lectura después de reanudar la PSP. En PPSSPP, el periódico y los avisos de autos funcionaron tras dos reanudaciones simuladas. La sesión en PSP física registró una reanudación y una reapertura correcta, con cero errores de reapertura. [Resultado y procedimiento](docs/instalacion-y-validacion.md#prueba-de-reanudación-de-r8).
+R8 reabre los archivos de datos de solo lectura después de reanudar la PSP. En PPSSPP, el periódico y los avisos de autos funcionaron tras dos reanudaciones simuladas. En PSP física se confirmó que el periódico y los avisos abren después de reanudar y que se puede volver al garaje. El informe registró una reapertura correcta y cero errores. [Resultado y procedimiento](docs/instalacion-y-validacion.md#prueba-de-reanudación-de-r8).
 
 En PSP física con R7 se conservó la pintura al guardar y cargar, y se completaron Aqueduct y Grudge Night. También se corrió Mulholland Drive. Su llegada a la meta queda pendiente en la consola. [Resultados de la prueba física](docs/instalacion-y-validacion.md#prueba-física-de-cierre).
 
