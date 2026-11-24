@@ -18,7 +18,7 @@ La prueba de host verificó la reapertura, la posición de lectura y el
 guardado. En PPSSPP se simuló dos veces el aviso de reanudación y se
 comprobó que el periódico y los avisos de autos abrieran y permitieran
 volver al garaje. Se registraron dos reaperturas y cero errores.
-Queda pendiente la prueba de R8 con la suspensión de la PSP física.
+En PSP física se registró una reanudación y una reapertura correcta.
 
 ## Actualización GE R7
 
@@ -234,6 +234,17 @@ reanudó. Al abrir el periódico apareció un mensaje de formato de
 archivo y la sesión terminó al salir por HOME.
 
 #### Prueba de reanudación de R8
+
+La sesión en PSP física se ejecutó a 333/166 MHz. El informe registró
+`RESUME_COUNT=1`, `RESOURCE_REOPENS=1` y `RESOURCE_REOPEN_ERRORS=0`.
+El contador confirma que se reabrió un recurso con su posición de
+lectura restaurada. Queda por confirmar en pantalla que se pudieron
+consultar los avisos y volver al garaje.
+
+La sesión se limitó a los menús y la carga. Registró 55 bloques PCM
+incompletos en menús y 7 en carga.
+
+#### Procedimiento
 
 1. Iniciá R8 y entrá al garaje con una partida.
 2. Suspendé y reanudá la PSP. Abrí el periódico, entrá a los avisos y
