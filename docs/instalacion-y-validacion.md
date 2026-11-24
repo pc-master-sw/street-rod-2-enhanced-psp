@@ -84,7 +84,8 @@ Select sale del juego.
 Después de correr en modo Enhanced GE, salí con Start más Select para
 guardar un informe `PERF00.TXT` junto al EBOOT. Cada salida usa el
 siguiente nombre disponible. `ROAD_MODES` identifica el tipo de carrera
-(`0x1` para calle, `0x2` y `0x4` para Grudge Night). `ROAD_STEP_US` suma
+(`0x1` para calle, `0x2` y `0x4` para Grudge Night, `0x8` para
+Aqueduct y `0x10` para Mulholland). `ROAD_STEP_US` suma
 el tiempo de los pasos de la carrera, incluida su espera original.
 `ORIGINAL_FRONT_US`, `ORIGINAL_MIRROR_US` y `ORIGINAL_COCKPIT_US`
 desglosan el dibujo original. `PREPARE_US` mide la composición en CPU.
@@ -161,7 +162,6 @@ código preparado y la receta de compilación en `source/BUILD.txt`.
   Con la reserva de 3.072 cuadros PCM, R6 procesó 3.760 bloques de
   audio en dos carreras, con cero faltantes y cero descartes durante
   las carreras. Presentó los 1.887 cuadros de video enviados.
-  Queda pendiente la prueba agrupada de cierre de R7 en PSP física.
 
 | Medición en PSP física | GE R2 | GE R3 | GE R4 | GE R5 | GE R6 |
 |---|---:|---:|---:|---:|---:|
@@ -184,6 +184,32 @@ Las versiones anteriores registraban solo faltantes de sesión, con
 83, 83, 84 y 117 respectivamente.
 
 ### Prueba física de cierre
+
+**R7 en PSP física, 23 de noviembre de 2026.** El color nuevo del auto
+se conservó al guardar y cargar la partida. Se completó una carrera de
+Aqueduct sin choques. Se jugaron varias carreras de Mulholland Drive
+que terminaron en choques durante la conducción. Queda por comprobar
+la llegada a la meta en Mulholland en PSP física.
+
+La sesión registró ambos circuitos (`ROAD_MODES=0x18`) a 333/166 MHz,
+con `PRESENT_PATH=worker`. El hilo de presentación mostró los 3.647
+cuadros enviados al GE.
+
+| Fase | Bloques PCM | Bloques incompletos |
+|---|---:|---:|
+| Menús | 16.920 | 98 |
+| Carga | 806 | 8 |
+| Traslados | 809 | 0 |
+| Vista de carrera | 17.097 | 0 |
+
+La ventana de carrera `RACE_PCM_*` registró 17.391 bloques, con cero
+faltantes, cuadros silenciados por faltantes o descartes. Los 106
+bloques incompletos de la sesión se repartieron entre menús y carga.
+
+También quedan por verificar en PSP física Grudge Night y la suspensión
+y reanudación.
+
+#### Procedimiento de prueba
 
 1. Iniciá R7 con tus datos DOS. Para conservar la instalación que ya
    usás, podés crear una carpeta de prueba con una copia de `Game` y

@@ -24,7 +24,7 @@ El ejecutable queda en `source/build/EBOOT.PBP`. Las fuentes preparadas para PSP
 
 ## Estado de GE R7
 
-R7 separa los contadores de audio de menús, carga, traslados y carrera. Pasó once pruebas de host. En PPSSPP se comprobó el guardado y la carga, se completaron Aqueduct y Mulholland con asistencia del motor y se verificaron Grudge Night y The King con resultados preparados. La [prueba de cierre de R7 en PSP física](docs/instalacion-y-validacion.md#prueba-física-de-cierre) queda pendiente.
+R7 separa los contadores de audio de menús, carga, traslados y carrera. Pasó once pruebas de host. En PPSSPP se comprobó el guardado y la carga, se completaron Aqueduct y Mulholland con asistencia del motor y se verificaron Grudge Night y The King con resultados preparados. En PSP física, el cambio de pintura se conservó al guardar y cargar, y se completó Aqueduct. También se probó Mulholland Drive. El informe registró cero faltantes de audio durante las carreras. Quedan por verificar la meta de Mulholland, Grudge Night y la suspensión y reanudación. [Resultados de la prueba física](docs/instalacion-y-validacion.md#prueba-física-de-cierre).
 
 ## Créditos y licencias
 
