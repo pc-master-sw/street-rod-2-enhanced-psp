@@ -28,6 +28,7 @@ static PortPspAudioPhase audio_phase;
 static PortPspAudioPhaseStats audio_phases[PORT_PSP_AUDIO_PHASES];
 static PortAudioPlayback audio_playback;
 static bool audio_in_race;
+static unsigned resume_count;
 #endif
 enum { PSP_PCM_BLOCK_FRAMES = 1024 };
 static unsigned int list[4096] __attribute__((aligned(16)));
@@ -47,7 +48,12 @@ static int exit_callback(int a,int b,void *c) { (void)a;(void)b;(void)c; quit=1;
 static int power_callback(int a,int flags,void *c) {
     (void)a;(void)c;
     if(flags&(PSP_POWER_CB_SUSPENDING|PSP_POWER_CB_STANDBY)) suspended=1;
-    if(flags&PSP_POWER_CB_RESUME_COMPLETE) suspended=0;
+    if (flags & PSP_POWER_CB_RESUME_COMPLETE) {
+#ifdef PORT_PSP_GE_LAYERS
+        ++resume_count;
+#endif
+        suspended = 0;
+    }
     return 0;
 }
 static int play_audio(SceSize n,void *p) {
@@ -79,6 +85,13 @@ static int play_audio(SceSize n,void *p) {
     return 0;
 }
 #ifdef PORT_PSP_GE_LAYERS
+unsigned port_psp_resume_count(void)
+{
+    /* Power callbacks are serviced on the game thread. */
+    sceKernelCheckCallback();
+    return resume_count;
+}
+
 void port_psp_buffer_audio(void)
 {
     audio_playback.prebuffer = 3 * PSP_PCM_BLOCK_FRAMES;
@@ -216,6 +229,7 @@ bool port_platform_init(const PortConfig *c) {
     cfg=*c; strcpy(asset_root,c->asset_root); cfg.asset_root=asset_root;
     stopping=quit=suspended=0; previous=0; memset(&ring,0,sizeof(ring)); memset(&stats,0,sizeof(stats));
 #ifdef PORT_PSP_GE_LAYERS
+    resume_count = 0;
     audio_playback.started = audio_playback.refilling = audio_in_race = false;
     memset(&race_audio, 0, sizeof(race_audio));
     audio_phase = PORT_PSP_AUDIO_MENU;

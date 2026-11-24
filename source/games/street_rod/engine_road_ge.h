@@ -14,6 +14,7 @@ bool sr_ge_commit(const uint8_t *coverage, unsigned height);
 const PortPspScene *sr_ge_scene(uint8_t *overlay, uint8_t transparent);
 
 void sr_ge_start_psp(void);
+void sr_ge_file_reopened(bool success);
 void sr_ge_race_audio(bool active);
 PortPspAudioPhase sr_ge_audio_phase(PortPspAudioPhase phase);
 void sr_ge_record_road(unsigned mode, uint64_t front_ns, uint64_t mirror_ns, uint64_t cockpit_ns,

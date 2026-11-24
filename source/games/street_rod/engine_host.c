@@ -90,10 +90,16 @@ int enh_gear_sc(int direction) { return direction > 0 ? 0x1e : 0x2c; }
 static struct {
     uint64_t road_frames, draw_us, frame_us, prepared, prepare_us, max_prepare_us;
     uint64_t front_us, mirror_us, cockpit_us;
-    unsigned modes;
+    unsigned modes, file_reopens, file_reopen_errors;
     int original_cpu, original_bus, cpu, bus;
     bool clock_changed, present_worker;
 } ge_perf;
+
+void sr_ge_file_reopened(bool success)
+{
+    if (success) ++ge_perf.file_reopens;
+    else ++ge_perf.file_reopen_errors;
+}
 
 void sr_ge_start_psp(void)
 {
@@ -154,8 +160,9 @@ static void ge_finish(void)
             if (fd < 0 && sceIoGetstat(path, &existing) < 0) break;
         }
         if (fd >= 0) {
+            unsigned resumes = port_psp_resume_count();
             char report[1536];
-            int length = snprintf(report, sizeof report, "Street Rod 2 Enhanced GE R7 - diagnostics\n"
+            int length = snprintf(report, sizeof report, "Street Rod 2 Enhanced GE R8 - diagnostics\n"
                 "CPU_MHZ=%d BUS_MHZ=%d\n"
                 "PRESENT_PATH=%s\n"
                 "ROAD_MODES=0x%X\n"
@@ -171,7 +178,8 @@ static void ge_finish(void)
                 "MENU_PCM_BLOCKS=%llu MENU_PCM_UNDERRUNS=%llu\n"
                 "LOAD_PCM_BLOCKS=%llu LOAD_PCM_UNDERRUNS=%llu\n"
                 "DRIVE_PCM_BLOCKS=%llu DRIVE_PCM_UNDERRUNS=%llu\n"
-                "RACE_VIEW_PCM_BLOCKS=%llu RACE_VIEW_PCM_UNDERRUNS=%llu\n",
+                "RACE_VIEW_PCM_BLOCKS=%llu RACE_VIEW_PCM_UNDERRUNS=%llu\n"
+                "RESUME_COUNT=%u RESOURCE_REOPENS=%u RESOURCE_REOPEN_ERRORS=%u\n",
                 ge_perf.cpu, ge_perf.bus, ge_perf.present_worker ? "worker" : "poll", ge_perf.modes,
                 (unsigned long long)ge_perf.road_frames, (unsigned long long)ge_perf.draw_us,
                 (unsigned long long)ge_perf.frame_us, (unsigned long long)ge_perf.front_us,
@@ -194,7 +202,8 @@ static void ge_finish(void)
                 (unsigned long long)phases[PORT_PSP_AUDIO_DRIVE].blocks,
                 (unsigned long long)phases[PORT_PSP_AUDIO_DRIVE].underruns,
                 (unsigned long long)phases[PORT_PSP_AUDIO_RACE].blocks,
-                (unsigned long long)phases[PORT_PSP_AUDIO_RACE].underruns);
+                (unsigned long long)phases[PORT_PSP_AUDIO_RACE].underruns,
+                resumes, ge_perf.file_reopens, ge_perf.file_reopen_errors);
             if (length > 0 && (size_t)length < sizeof report) sceIoWrite(fd, report, length);
             sceIoClose(fd);
         }

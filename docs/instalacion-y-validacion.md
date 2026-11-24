@@ -1,5 +1,25 @@
 # Street Rod 2 Enhanced GE para PSP
 
+## Actualización GE R8
+
+En R7 se observó un error al abrir el periódico después de suspender y
+reanudar desde el garaje. El periódico carga imágenes de `LIB2`. R8
+reabre los archivos de datos de solo lectura al primer acceso después de
+reanudar y restaura su posición. Las partidas mantienen su ruta de
+lectura y escritura.
+
+`PERFxx.TXT` agrega `RESUME_COUNT`, `RESOURCE_REOPENS` y
+`RESOURCE_REOPEN_ERRORS`. Son el número de notificaciones de
+reanudación completa, reaperturas correctas y fallos de reapertura
+durante la sesión. Si hubo una reapertura correcta, el contador de
+errores debería seguir en cero.
+
+La prueba de host verificó la reapertura, la posición de lectura y el
+guardado. En PPSSPP se simuló dos veces el aviso de reanudación y se
+comprobó que el periódico y los avisos de autos abrieran y permitieran
+volver al garaje. Se registraron dos reaperturas y cero errores.
+Queda pendiente la prueba de R8 con la suspensión de la PSP física.
+
 ## Actualización GE R7
 
 El informe agrega contadores de audio por fase. `MENU_PCM_*` cuenta
@@ -206,22 +226,16 @@ La ventana de carrera `RACE_PCM_*` registró 17.391 bloques, con cero
 faltantes, cuadros silenciados por faltantes o descartes. Los 106
 bloques incompletos de la sesión se repartieron entre menús y carga.
 
-También quedan por verificar en PSP física Grudge Night y la suspensión
-y reanudación.
+En otra sesión se completó Grudge Night con R7. El informe registró
+`ROAD_MODES=0x6` y presentó los 1.161 cuadros enviados. En carrera
+hubo cero faltantes de audio y 12 cuadros PCM descartados. Después de
+completar el evento, se volvió al garaje, se suspendió la PSP y se
+reanudó. Al abrir el periódico apareció un mensaje de formato de
+archivo y la sesión terminó al salir por HOME.
 
-#### Procedimiento de prueba
+#### Prueba de reanudación de R8
 
-1. Iniciá R7 con tus datos DOS. Para conservar la instalación que ya
-   usás, podés crear una carpeta de prueba con una copia de `Game` y
-   `Save` y el EBOOT de R7.
-2. En el garaje, cambiá la pintura o hacé una compra. Guardá en un
-   casillero libre, salí y volvé a entrar para comprobar el estado.
-3. Corré Aqueduct y Mulholland desde Burger’s. Comprobá el coche en
-   movimiento, el final de carrera y el regreso al menú.
-4. Probá Grudge Night un miércoles del juego si ya tenés una partida
-   en ese punto. Anotá hasta qué ronda llegaste y cómo se presentó el
-   resultado.
-5. Suspendé y reanudá desde el garaje. Al volver, verificá controles,
-   sonido y música. Anotá dónde escuchás algún corte si aparece.
-6. Salí con Start más Select y copiá el nuevo `PERFxx.TXT`. El archivo
-   indica qué modos se ejecutaron y los faltantes de audio por fase.
+1. Iniciá R8 y entrá al garaje con una partida.
+2. Suspendé y reanudá la PSP. Abrí el periódico, entrá a los avisos y
+   volvé al garaje.
+3. Salí con Start más Select y guardá el informe `PERFxx.TXT`.

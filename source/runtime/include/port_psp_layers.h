@@ -39,6 +39,7 @@ void port_psp_track_race_audio(bool active);
 void port_psp_race_audio(PortPspRaceAudio *out);
 PortPspAudioPhase port_psp_audio_phase(PortPspAudioPhase phase);
 void port_psp_audio_phases(PortPspAudioPhaseStats out[PORT_PSP_AUDIO_PHASES]);
+unsigned port_psp_resume_count(void);
 bool port_psp_start_present_worker(void);
 bool port_psp_frame_ready(void);
 void port_psp_scene_timing(PortPspSceneTiming *out);

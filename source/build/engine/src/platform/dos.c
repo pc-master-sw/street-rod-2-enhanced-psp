@@ -182,7 +182,15 @@ void crt_ffree(FarPtr p)
 #define DOS_STD_HANDLES 5
 
 typedef enum { H_FREE, H_STD, H_FILE } HandleKind;
-static struct { HandleKind kind; FILE *f; } dos_jft[DOS_MAX_HANDLES];
+static struct {
+    HandleKind kind;
+    FILE *f;
+#ifdef STREET_ROD_GE
+    char *resource_path;
+    long offset;
+    unsigned resume_count;
+#endif
+} dos_jft[DOS_MAX_HANDLES];
 static bool dos_jft_ready;
 
 static void dos_jft_init(void)
@@ -196,6 +204,25 @@ static FILE *dos_file(u16 h)
 {
     dos_jft_init();
     if (h >= DOS_MAX_HANDLES || dos_jft[h].kind != H_FILE) return NULL;
+#ifdef STREET_ROD_GE
+    if (dos_jft[h].resource_path) {
+        unsigned resumes = port_psp_resume_count();
+        if (!dos_jft[h].f || dos_jft[h].resume_count != resumes) {
+            /* The Memory Stick may invalidate existing streams during suspend.
+             * Keep the DOS handle and logical offset, and reopen only game data. */
+            if (dos_jft[h].f) fclose(dos_jft[h].f);
+            FILE *f = fopen(dos_jft[h].resource_path, "rb");
+            long offset = dos_jft[h].offset;
+            if (f && (fseek(f, offset, SEEK_SET) != 0 || ftell(f) != offset)) {
+                fclose(f);
+                f = NULL;
+            }
+            dos_jft[h].f = f;
+            dos_jft[h].resume_count = resumes;
+            sr_ge_file_reopened(f != NULL);
+        }
+    }
+#endif
     return dos_jft[h].f;
 }
 
@@ -222,8 +249,18 @@ static u16 dos_open_file(const char *name, const char *fmode, bool create, u16 *
     }
     char *path = host_game_path(base, create);
     if (!path) return 2;
+#ifdef STREET_ROD_GE
+    const bool resource = strcmp(fmode, "rb") == 0 && !sr_writable_file(base);
+    if (resource) dos_jft[h].resume_count = port_psp_resume_count();
+#endif
     FILE *f = fopen(path, fmode);
-    host_free(path);
+#ifdef STREET_ROD_GE
+    if (f && resource) {
+        dos_jft[h].resource_path = path;
+        dos_jft[h].offset = 0;
+    } else
+#endif
+        host_free(path);
     if (!f) return create ? 5 : 2;
     dos_jft[h].kind = H_FILE;
     dos_jft[h].f = f;
@@ -290,6 +327,10 @@ u16 dos_read(u16 handle, FarPtr buf, u16 n, u16 *got)
     *got = dos_xfer(f, buf, n, false);
 #ifdef STREET_ROD_GE
     sr_ge_audio_phase(previous);
+    if (dos_jft[handle].resource_path) {
+        dos_jft[handle].offset += *got;
+        if (ferror(f)) return dos_ret(5);
+    }
 #endif
     return 0;
 }
@@ -316,7 +357,11 @@ u16 dos_close(u16 handle)
 {
     dos_jft_init();
     if (handle >= DOS_MAX_HANDLES || dos_jft[handle].kind == H_FREE) return dos_ret(6);
-    if (dos_jft[handle].kind == H_FILE) fclose(dos_jft[handle].f);
+    if (dos_jft[handle].kind == H_FILE && dos_jft[handle].f) fclose(dos_jft[handle].f);
+#ifdef STREET_ROD_GE
+    host_free(dos_jft[handle].resource_path);
+    dos_jft[handle].resource_path = NULL;
+#endif
     dos_jft[handle].kind = H_FREE;
     dos_jft[handle].f = NULL;
     return 0;
@@ -347,7 +392,13 @@ void dos_getdrive(u16 *drive)
 s16 lib_seek(u16 handle, s32 pos)
 {
     FILE *f = dos_file(handle);
-    if (f && fseek(f, (long)(u32)pos, SEEK_SET) == 0) return 0;
+    long offset = (long)(u32)pos;
+    if (f && fseek(f, offset, SEEK_SET) == 0) {
+#ifdef STREET_ROD_GE
+        if (dos_jft[handle].resource_path) dos_jft[handle].offset = offset;
+#endif
+        return 0;
+    }
     crt_dosmaperr(f ? 0x19 : 6);                  /* 6 invalid handle; PORT: 19h if the host seek fails */
     DSW(RT_ERRNO) = DSW(RT_DOSERRNO);
     return DSS(RT_DOSERRNO);
