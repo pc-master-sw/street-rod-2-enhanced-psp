@@ -716,7 +716,9 @@ bool enh_compose(bool (*ega_compose)(u32 *xrgb), u32 *out)
             uint32_t colors[16];
             for (int color = 0; color < 16; color++)
                 colors[color] = (enh_pal_rgb(pal[color]) << 8) | 255u;
-            sr_ge_begin(colors, ENH_VIEW_Y0, ENH_VIEW_Y1 - ENH_VIEW_Y0);
+            bool wide = sr_ge_widescreen && view.b &&
+                (view.b->mode == 0 || view.b->mode == 1 || view.b->mode == 8);
+            sr_ge_begin(colors, ENH_VIEW_Y0, ENH_VIEW_Y1 - ENH_VIEW_Y0, wide);
         }
 #endif
         if (rs.hold) {                                      /* the last view */

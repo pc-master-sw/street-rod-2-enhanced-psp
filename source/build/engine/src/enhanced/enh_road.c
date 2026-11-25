@@ -206,7 +206,7 @@ static void town_walls(const cam *c, int s, const sect *p, int n, bool left)
     const sect *nr = &p[0], *fr = &p[n];
     float xn = left ? nr->xol : nr->xor_, xf = left ? fr->xol : fr->xor_;
     if (Cm1 & 4) {                                              /* the end face towards the intersection */
-        float x0 = left ? -1.0 : xn, x1 = left ? xn : 321.0;
+        float x0 = left ? enh_front_edge(true) : xn, x1 = left ? xn : enh_front_edge(false);
         ras_rect(x0, nr->ye, x1, nr->y - 1.0, 2);
         ras_rect(x0, nr->y - 1.0, x1, nr->y, 4);
     }
@@ -307,8 +307,9 @@ static void cross_walk(const cam *c, float Pa, float Pb)
     if (Pb <= Pa) return;
     sect a = section(c, Pa), b = section(c, Pb);                /* near, far */
     if (b.y >= a.y) return;
-    band_quad(4, -1.0, b.xl, -1.0, a.xl, &b, &a);
-    band_quad(4, b.xr, 321.0, a.xr, 321.0, &b, &a);
+    float left = enh_front_edge(true), right = enh_front_edge(false);
+    band_quad(4, left, b.xl, left, a.xl, &b, &a);
+    band_quad(4, b.xr, right, a.xr, right, &b, &a);
 }
 
 static void cross_street(const cam *c, int s, const sect *p, int n)
@@ -356,7 +357,7 @@ static void band(const cam *c, int s, int kband, const sect *p, int n, float hcl
                 band_quad(2, b->xol, b->xl, a->xol, a->xl, b, a);
                 band_quad(2, b->xr, b->xor_, a->xr, a->xor_, b, a);
             }
-            float lb = -1.0, la = -1.0, rb = 321.0, ra = 321.0;
+            float lb = enh_front_edge(true), la = lb, rb = enh_front_edge(false), ra = rb;
             /* beside the far rows the ground reaches `ext` only (the original; live, where water fills the bridge's sides
              * and the road goes on past row 14, the ground stays full width: no strip of mountains above the water and
              * no far road over the panorama) */
@@ -389,7 +390,7 @@ static void band(const cam *c, int s, int kband, const sect *p, int n, float hcl
                 band_quad(9, b->xr, mb, a->xr, ma, b, a);
             }
         }
-        if ((C & 8) && b->xl < 0x13F) {
+        if ((C & 8) && b->xl < enh_front_edge(false) - 2.0f) {
             float wb = dash_width(c, kband, b->Pw), wa = dash_width(c, kband, a->Pw);
             if (wide) { wb *= 8; wa *= 8; }
             float cb = (b->xl + b->xr) / 2, ca = (a->xl + a->xr) / 2;

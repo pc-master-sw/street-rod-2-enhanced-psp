@@ -277,6 +277,16 @@ bool port_platform_poll_input(PortInput *o) {
     memset(o,0,sizeof(*o)); port_input_update(o,held,&previous); o->quit=quit; o->suspended=suspended;
     return true;
 }
+static inline void draw_indexed_sprite(float u0, float v0, float u1, float v1,
+                                       float x0, float y0, float x1, float y1)
+{
+    typedef struct { float u, v, x, y, z; } Sprite;
+    Sprite *v = sceGuGetMemory(2 * sizeof(*v));
+    v[0] = (Sprite){u0, v0, x0, y0, 0};
+    v[1] = (Sprite){u1, v1, x1, y1, 0};
+    sceGuDrawArray(GU_SPRITES, GU_TEXTURE_32BITF | GU_VERTEX_32BITF | GU_TRANSFORM_2D, 2, NULL, v);
+}
+
 #ifdef PORT_PSP_GE_LAYERS
 bool port_psp_frame_ready(void)
 {
@@ -326,15 +336,13 @@ void port_psp_scene_timing(PortPspSceneTiming *out)
     *out = scene_timing;
 }
 
-static void draw_scene(const PortPspScene *scene, PortViewport dst, int w, int h)
+static void draw_scene_background(const PortPspScene *scene, PortViewport dst, int w, int h)
 {
     for (unsigned y = 0; y < scene->height; y++)
         memcpy(scene_pixels + y * 512, scene->background + y * w, (size_t)w);
     for (unsigned i = 0; i < 16; i++) scene_clut[i] = port_rgba_to_abgr(scene->palette[i]);
     sceKernelDcacheWritebackRange(scene_pixels, scene->height * 512);
     sceKernelDcacheWritebackRange(scene_clut, sizeof scene_clut);
-    sceKernelDcacheWritebackRange(scene->vertices, scene->vertex_count * sizeof(*scene->vertices));
-
     sceGuEnable(GU_TEXTURE_2D);
     sceGuClutMode(GU_PSM_8888, 0, 15, 0);
     sceGuClutLoad(2, scene_clut);
@@ -345,16 +353,28 @@ static void draw_scene(const PortPspScene *scene, PortViewport dst, int w, int h
     sceGuTexFilter(GU_NEAREST, GU_NEAREST);
     sceGuTexScale(1.0f, 1.0f);
     sceGuTexOffset(0.0f, 0.0f);
-    typedef struct { float u, v, x, y, z; } Sprite;
     float top = dst.y + (float)scene->top * dst.height / h;
     float bottom = dst.y + (float)(scene->top + scene->height) * dst.height / h;
     for (int left = 0; left < w; left += 32) {
         int right = left + 32 < w ? left + 32 : w;
-        Sprite *v = sceGuGetMemory(2 * sizeof(*v));
-        v[0] = (Sprite){left, 0, dst.x + (float)left * dst.width / w, top, 0};
-        v[1] = (Sprite){right, scene->height, dst.x + (float)right * dst.width / w, bottom, 0};
-        sceGuDrawArray(GU_SPRITES, GU_TEXTURE_32BITF | GU_VERTEX_32BITF | GU_TRANSFORM_2D, 2, NULL, v);
+        draw_indexed_sprite(left, 0, right, scene->height,
+                            dst.x + (float)left * dst.width / w, top,
+                            dst.x + (float)right * dst.width / w, bottom);
     }
+    if (scene->wide) {
+        /* The same wrapped panorama is already used by the center of the view. */
+        float left = (float)dst.x * w / dst.width;
+        float right = (float)(480 - dst.x - dst.width) * w / dst.width;
+        draw_indexed_sprite(w - left, 0, w, scene->height, 0, top, dst.x, bottom);
+        draw_indexed_sprite(0, 0, right, scene->height,
+                            dst.x + dst.width, top, 480, bottom);
+    }
+}
+
+static void draw_scene(const PortPspScene *scene, PortViewport dst, int w, int h)
+{
+    if (scene->background) draw_scene_background(scene, dst, w, h);
+    sceKernelDcacheWritebackRange(scene->vertices, scene->vertex_count * sizeof(*scene->vertices));
     sceGuDisable(GU_TEXTURE_2D);
     sceGuDrawArray(GU_TRIANGLES, GU_COLOR_8888 | GU_VERTEX_32BITF | GU_TRANSFORM_2D,
                    scene->vertex_count, NULL, scene->vertices);
@@ -363,10 +383,23 @@ static void draw_scene(const PortPspScene *scene, PortViewport dst, int w, int h
     sceGuEnable(GU_ALPHA_TEST);
 }
 
+static void draw_frame_sides(PortViewport dst, int w, int h, unsigned top, unsigned bottom)
+{
+    float y0 = dst.y + (float)top * dst.height / h;
+    float y1 = dst.y + (float)bottom * dst.height / h;
+    int edge = dst.x + dst.width;
+    /* Carry the border colors outside the scene, keeping the original frame centered. */
+    draw_indexed_sprite(0, 0, 1, top, 0, dst.y, dst.x, y0);
+    draw_indexed_sprite(w - 1, 0, w, top, edge, dst.y, 480, y0);
+    draw_indexed_sprite(0, bottom, 1, h, 0, y1, dst.x, dst.y + dst.height);
+    draw_indexed_sprite(w - 1, bottom, w, h, edge, y1, 480, dst.y + dst.height);
+}
+
 static bool present_indexed(const uint8_t *p,int w,int h,int pitch,const uint32_t *pal,int n,
                             const PortPspScene *scene, bool async, bool measure) {
     if (scene && (!scene->height || scene->height > 128 || scene->top + scene->height > (unsigned)h
-        || !scene->background || !scene->palette || !scene->vertices || !scene->vertex_count || n >= 255))
+        || scene->view_bottom <= scene->top || scene->view_bottom > scene->top + scene->height
+        || !scene->palette || !scene->vertices || !scene->vertex_count || n >= 255))
         return false;
     if(!initialized || suspended || w!=cfg.width || h!=cfg.height ||
        !port_frame_valid(p,w,h,pitch,pal,n+(scene!=NULL))) return false;
@@ -380,8 +413,9 @@ bool port_platform_present_indexed(const uint8_t *p,int w,int h,int pitch,const 
     memset(clut,0,sizeof(clut)); for(int i=0;i<n;++i) clut[i]=port_rgba_to_abgr(pal[i]);
     sceKernelDcacheWritebackRange(pixels,h*512); sceKernelDcacheWritebackRange(clut,sizeof(clut));
     sceGuStart(GU_DIRECT,list); sceGuClearColor(0); sceGuClear(GU_COLOR_BUFFER_BIT);
+    PortViewport dst=port_viewport(480,272,w,h,cfg.aspect_4_3);
 #ifdef PORT_PSP_GE_LAYERS
-    if (scene) draw_scene(scene, port_viewport(480,272,w,h,cfg.aspect_4_3), w, h);
+    if (scene) draw_scene(scene, dst, w, h);
 #endif
     sceGuClutMode(GU_PSM_8888,0,255,0); sceGuClutLoad(32,clut);
     sceGuTexMode(GU_PSM_T8,0,0,0); sceGuTexImage(0,512,512,512,pixels); sceGuTexFlush();
@@ -392,17 +426,15 @@ bool port_platform_present_indexed(const uint8_t *p,int w,int h,int pitch,const 
 #endif
     sceGuTexFilter(GU_NEAREST,GU_NEAREST);
     sceGuTexScale(1.0f,1.0f); sceGuTexOffset(0,0);
-    PortViewport dst=port_viewport(480,272,w,h,cfg.aspect_4_3);
     /* Narrow sprites avoid the GE sprite rasterizer's wide-texture penalty. */
-    struct Vertex { float u,v,x,y,z; };
     for(int left=0;left<w;left+=32) {
         int right=left+32<w?left+32:w;
-        struct Vertex *v=sceGuGetMemory(2*sizeof(*v));
-        v[0]=(struct Vertex){left,0,dst.x+(float)left*dst.width/w,dst.y,0};
-        v[1]=(struct Vertex){right,h,dst.x+(float)right*dst.width/w,dst.y+dst.height,0};
-        sceGuDrawArray(GU_SPRITES,GU_TEXTURE_32BITF|GU_VERTEX_32BITF|GU_TRANSFORM_2D,2,NULL,v);
+        draw_indexed_sprite(left, 0, right, h,
+                            dst.x + (float)left * dst.width / w, dst.y,
+                            dst.x + (float)right * dst.width / w, dst.y + dst.height);
     }
 #ifdef PORT_PSP_GE_LAYERS
+    if (scene && scene->wide) draw_frame_sides(dst, w, h, scene->top, scene->view_bottom);
     if (scene) sceGuDisable(GU_ALPHA_TEST);
     if (async) {
         sceGuFinish();

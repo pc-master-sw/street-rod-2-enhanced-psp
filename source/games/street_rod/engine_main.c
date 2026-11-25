@@ -137,6 +137,9 @@ int main(int argc, char **argv)
 #ifdef STREET_ROD_GE
     struct stat software_file;
     sr_ge_enabled = !(stat("SOFTWARE.TXT", &software_file) == 0 && S_ISREG(software_file.st_mode));
+    struct stat narrow_file;
+    sr_ge_widescreen = sr_ge_enabled &&
+        !(stat("4BY3.TXT", &narrow_file) == 0 && S_ISREG(narrow_file.st_mode));
     struct stat audio_file;
     if (sr_ge_enabled && !enh.classic && (stat("AUDIOLOW.TXT", &audio_file) != 0 || !S_ISREG(audio_file.st_mode)))
         port_psp_buffer_audio();
@@ -153,6 +156,9 @@ int main(int argc, char **argv)
     enh.draw_scale = 18.0f / 14.0f;
     enh.haze = 0;
     enh.modes = ENH_MODE_TOWN | ENH_MODE_DRAG;
+#ifdef STREET_ROD_GE
+    if (sr_ge_widescreen) enh.modes |= ENH_MODE_AQUEDUCT;
+#endif
     enh_init();
 #endif
     ega_init();

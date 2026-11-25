@@ -12,7 +12,8 @@ typedef struct {
     const uint8_t *background;
     const uint32_t *palette;
     const PortPspVertex *vertices;
-    unsigned top, height, vertex_count;
+    unsigned top, height, view_bottom, vertex_count;
+    bool wide;
 } PortPspScene;
 
 typedef struct {

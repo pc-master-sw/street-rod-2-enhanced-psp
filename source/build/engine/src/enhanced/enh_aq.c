@@ -1,3 +1,6 @@
+#ifdef STREET_ROD_GE
+#include "engine_road_ge.h"
+#endif
 /* Street Rod 2 Enhanced: the Aqueduct (road mode 8, ENHANCED.md §3.3, S2.7). The original's separate renderer
  * (race_aq.c: aq_project_front / _mirror, aq_draw_scene) re-made in float at the interpolated view:
  *
@@ -186,15 +189,21 @@ static void stars(const aqc *c, u16 tab, int n, float xoff, float x0, float peri
     for (int i = 0; i < n; i++) {
         float x = DSS((u16)(tab + 4 * i)) + xoff, y = DSS((u16)(tab + 4 * i + 2));
         x = x0 + fmodf(fmodf(x - x0, period) + period, period);
-        float dx = x - c->rcx, dy = y - c->rcy;
-        float rx = c->rcx + ca * dx + sa * dy + 0.5, ry = c->rcy + ca * dy - sa * dx + 0.5;
-        ras_rect(rx - st / 2, ry - st / 2, rx + st / 2, ry + st / 2, col);
+        int copies = 0;
+#ifdef STREET_ROD_GE
+        if (sr_ge_recording && sr_ge_widescreen && !c->mirror) copies = 1;
+#endif
+        for (int copy = -copies; copy <= copies; copy++) {
+            float dx = x + copy * period - c->rcx, dy = y - c->rcy;
+            float rx = c->rcx + ca * dx + sa * dy + 0.5, ry = c->rcy + ca * dy - sa * dx + 0.5;
+            ras_rect(rx - st / 2, ry - st / 2, rx + st / 2, ry + st / 2, col);
+        }
     }
 }
 
 static void sky(const aqc *c)
 {
-    ras_rect(0, ENH_VIEW_Y0, 320, ENH_VIEW_Y1, 1);
+    ras_rect(enh_front_edge(true), ENH_VIEW_Y0, enh_front_edge(false), ENH_VIEW_Y1, 1);
     float h = c->heading, rate = c->compare ? 1.0 : SKY_RATE;     /* comparing: the original's scroll */
     stars(c, 0x7F2E, 18, rate * h, 0, 320, (u8)DSW(DS_star_colour_a));
     stars(c, 0x7F76, 6, rate * h, 0, 320, (u8)DSW(DS_star_colour_b));
@@ -329,6 +338,9 @@ static float car_bank(const aqc *c)
 
 static void car_front(const aqc *c)
 {
+#ifdef STREET_ROD_GE
+    if (sr_ge_recording) return;
+#endif
     const enh_snap *b = c->b;
     int s = b->opp_s[0];
     if (!c->compare && enh_far_opp(b, c->O, c->P)) {          /* beyond the original's rows (S2.9, §4 item 4) */
@@ -525,6 +537,9 @@ bool enh_aq_render(const enh_view *v)
     set_roll(&c, cl > 0x5C8 && cr < 0xCF8 ? (c.xl + c.xr) / 2 : cl <= 0x5C8 ? c.xl : c.xr);
     front(&c);
     dbg_c = c;
+#ifdef STREET_ROD_GE
+    if (sr_ge_recording) return true;
+#endif
     aqc m = c;                                              /* aq_project_mirror */
     m.mirror = true;
     m.dx = -v->heading;
