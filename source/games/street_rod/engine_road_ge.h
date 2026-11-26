@@ -5,11 +5,9 @@
 
 extern bool sr_ge_enabled;
 extern bool sr_ge_recording;
-extern bool sr_ge_widescreen;
 
 void sr_ge_reset(void);
-void sr_ge_begin(const uint32_t colors[16], unsigned top, unsigned height, bool wide);
-float sr_ge_front_edge(bool left);
+void sr_ge_begin(const uint32_t colors[16], unsigned top, unsigned height);
 void sr_ge_background(const uint8_t *pixels);
 void sr_ge_polygon(const float *xy, int n, uint8_t color, int left, int top, int right, int bottom);
 bool sr_ge_commit(const uint8_t *coverage, unsigned height);

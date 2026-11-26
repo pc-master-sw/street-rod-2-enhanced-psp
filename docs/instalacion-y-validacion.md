@@ -1,24 +1,6 @@
 # Street Rod 2 Enhanced GE para PSP
 
-## Actualización GE R9
-
-La vista panorámica ocupa los 480 × 272 píxeles de la PSP en ciudad,
-Aqueduct y la drag callejera. El GE dibuja la pista y el entorno con un
-campo de visión más ancho. La cabina original ocupa sus 362 × 272
-píxeles centrados. Sus colores se prolongan hacia los lados junto al
-techo y al tablero. Los menús usan su presentación 4:3.
-
-Para recuperar la vista de R8, creá un archivo vacío `4BY3.TXT` junto
-al EBOOT y reiniciá. `PERFxx.TXT` registra en `WIDE_SUBMITTED` cuántos
-cuadros se enviaron con la vista panorámica, incluidos los traslados por
-la ciudad.
-
-La prueba de host verificó el recorte panorámico, la escala central y
-los límites del retrovisor. En PPSSPP 1.20.4 se comprobó el encuadre de
-ciudad, drag callejera y Aqueduct. La prueba de Aqueduct usó una
-partida de laboratorio con indicadores de habilidad ajustados para
-conseguir un rival. La vista 4:3 se verificó con `4BY3.TXT`.
-Queda pendiente comprobar la vista y su rendimiento en PSP física.
+**GE R8 es el candidato principal para PSP.**
 
 ## Actualización GE R8
 
@@ -111,7 +93,6 @@ desde tu edición DOS `SR.EXE`, `LIB1`, `LIB2`, `LIB3`, `SR2_DATA`,
 | Archivo junto al EBOOT | Modo al arrancar |
 |---|---|
 | Carpeta sin archivos de selección | Enhanced GE |
-| `4BY3.TXT` | Enhanced GE con la vista 4:3 de R8 |
 | `SOFTWARE.TXT` | Enhanced R2 por software |
 | `CLASSIC.TXT` | Gráficos clásicos. Tiene prioridad si ambos archivos existen. |
 
@@ -149,10 +130,9 @@ cuando se usa la reserva.
 
 ## Qué dibuja el GE
 
-En ciudad, Aqueduct y aceleración callejera, la CPU proyecta y recorta los
+En ciudad y en aceleración callejera, la CPU proyecta y recorta los
 polígonos de la pista. El GE rellena los triángulos de la carretera, el
-terreno y las construcciones. En ciudad y drag el cielo es una textura
-indexada. En Aqueduct el GE dibuja el cielo y las paredes del canal.
+terreno y las construcciones. El cielo es una textura indexada.
 El tablero, el retrovisor, los autos y los objetos del juego original
 se superponen con una máscara. Las demás pruebas usan la vista clásica.
 

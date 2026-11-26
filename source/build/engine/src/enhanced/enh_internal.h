@@ -1,6 +1,3 @@
-#ifdef STREET_ROD_GE
-#include "engine_road_ge.h"
-#endif
 /* Street Rod 2 Enhanced: declarations shared by the files of src/enhanced/ (ENHANCED.md §2). */
 #ifndef ENH_INTERNAL_H
 #define ENH_INTERNAL_H
@@ -90,14 +87,6 @@ bool enh_interp(uint64_t now_ns, enh_view *out);
 #define ENH_VIEW_Y0 18              /* the original's view clip: rows 18 .. 101 */
 #define ENH_VIEW_Y1 102
 #define ENH_SPLIT_Y 0x63            /* race split (race_drive.c): rows >= 99 show the dashboard page */
-
-static inline float enh_front_edge(bool left)
-{
-#ifdef STREET_ROD_GE
-    if (sr_ge_recording) return sr_ge_front_edge(left);
-#endif
-    return left ? -1.0f : 321.0f;
-}
 bool ras_begin(int S);
 int ras_S(void);
 u8 *ras_row(int j);                 /* sample row j (0 = top of logical row ENH_VIEW_Y0), 320 * S samples */

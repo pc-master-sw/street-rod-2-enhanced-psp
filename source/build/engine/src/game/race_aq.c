@@ -21,9 +21,6 @@
 
 #include "platform/platform.h"
 #include "platform/video.h"
-#ifdef STREET_ROD_GE
-#include "enhanced/enhanced.h"
-#endif
 
 #define MODE  DSS(DS_road_mode)
 #define NROWS DSS(DS_aq_rows)
@@ -392,17 +389,6 @@ void starter_draw_mirror_aq(s16 row)
 /* ================================================================================ scene */
 
 /* 0dcb:905c aq_draw_scene: channel, trough, features and the opponent of the current view (N = DS:B194) */
-static void aq_draw_front_opponent(void)
-{
-#ifdef STREET_ROD_GE
-    enh_prop_fg(false);
-#endif
-    opponent_draw();
-#ifdef STREET_ROD_GE
-    enh_prop_bg(false);
-#endif
-}
-
 static void aq_draw_scene(void)
 {
     s16 N = NROWS;
@@ -511,13 +497,13 @@ static void aq_draw_scene(void)
             aq_draw_box(p2, 1);
         }
         if (N == 14) {
-            if (sub16(DSS(DS_opp_seg), DSS(DS_seg)) == i) aq_draw_front_opponent();
+            if (sub16(DSS(DS_opp_seg), DSS(DS_seg)) == i) opponent_draw();
         } else {
             if ((s16)(i - N - DSS(DS_starter_seg) + DSS(DS_seg) - 1) == 0) starter_draw_mirror_aq((s16)(N - i));
             if (sub16(DSS(DS_seg), DSS(DS_opp_seg)) == i) opponent_draw();
         }
     }
-    if (N == 14 && DSS(DS_opp_seg) == DSS(DS_seg)) aq_draw_front_opponent();
+    if (N == 14 && DSS(DS_opp_seg) == DSS(DS_seg)) opponent_draw();
 }
 
 /* ================================================================================ roll */

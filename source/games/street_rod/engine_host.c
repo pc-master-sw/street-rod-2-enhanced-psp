@@ -90,7 +90,7 @@ int enh_gear_sc(int direction) { return direction > 0 ? 0x1e : 0x2c; }
 static struct {
     uint64_t road_frames, draw_us, frame_us, prepared, prepare_us, max_prepare_us;
     uint64_t front_us, mirror_us, cockpit_us;
-    unsigned modes, file_reopens, file_reopen_errors, wide_submitted;
+    unsigned modes, file_reopens, file_reopen_errors;
     int original_cpu, original_bus, cpu, bus;
     bool clock_changed, present_worker;
 } ge_perf;
@@ -162,7 +162,7 @@ static void ge_finish(void)
         if (fd >= 0) {
             unsigned resumes = port_psp_resume_count();
             char report[1536];
-            int length = snprintf(report, sizeof report, "Street Rod 2 Enhanced GE R9 - diagnostics\n"
+            int length = snprintf(report, sizeof report, "Street Rod 2 Enhanced GE R8 - diagnostics\n"
                 "CPU_MHZ=%d BUS_MHZ=%d\n"
                 "PRESENT_PATH=%s\n"
                 "ROAD_MODES=0x%X\n"
@@ -179,8 +179,7 @@ static void ge_finish(void)
                 "LOAD_PCM_BLOCKS=%llu LOAD_PCM_UNDERRUNS=%llu\n"
                 "DRIVE_PCM_BLOCKS=%llu DRIVE_PCM_UNDERRUNS=%llu\n"
                 "RACE_VIEW_PCM_BLOCKS=%llu RACE_VIEW_PCM_UNDERRUNS=%llu\n"
-                "RESUME_COUNT=%u RESOURCE_REOPENS=%u RESOURCE_REOPEN_ERRORS=%u\n"
-                "WIDE_SUBMITTED=%u\n",
+                "RESUME_COUNT=%u RESOURCE_REOPENS=%u RESOURCE_REOPEN_ERRORS=%u\n",
                 ge_perf.cpu, ge_perf.bus, ge_perf.present_worker ? "worker" : "poll", ge_perf.modes,
                 (unsigned long long)ge_perf.road_frames, (unsigned long long)ge_perf.draw_us,
                 (unsigned long long)ge_perf.frame_us, (unsigned long long)ge_perf.front_us,
@@ -204,7 +203,7 @@ static void ge_finish(void)
                 (unsigned long long)phases[PORT_PSP_AUDIO_DRIVE].underruns,
                 (unsigned long long)phases[PORT_PSP_AUDIO_RACE].blocks,
                 (unsigned long long)phases[PORT_PSP_AUDIO_RACE].underruns,
-                resumes, ge_perf.file_reopens, ge_perf.file_reopen_errors, ge_perf.wide_submitted);
+                resumes, ge_perf.file_reopens, ge_perf.file_reopen_errors);
             if (length > 0 && (size_t)length < sizeof report) sceIoWrite(fd, report, length);
             sceIoClose(fd);
         }
@@ -670,11 +669,8 @@ static bool present_frame(void)
             ge_perf.prepare_us += elapsed;
             if (elapsed > ge_perf.max_prepare_us) ge_perf.max_prepare_us = elapsed;
         }
-        if (scene) {
-            bool submitted = port_psp_present_layers(scene, indexed, FRAME_W, FRAME_H, colors, count, measure);
-            if (submitted && scene->wide) ++ge_perf.wide_submitted;
-            return submitted;
-        }
+        if (scene)
+            return port_psp_present_layers(scene, indexed, FRAME_W, FRAME_H, colors, count, measure);
         if (measure)
             return port_psp_present_indexed_async(indexed, FRAME_W, FRAME_H, colors, count);
     }
